@@ -1,5 +1,6 @@
-# Seguidor de linea implementado en raspberry usando cámara y procesamiento de imágenes
+# Código en Python para el robot seguidor de linea usando raspberry, cámara y procesamiento de imágenes
 # Realizado por: Santiago Charry, Juan D Rozo y Christian Páez
+
 import cv2
 import numpy as np
 from gpiozero import LED       
