@@ -1,0 +1,76 @@
+# Seguidor de linea implementado en raspberry usando cámara y procesamiento de imágenes
+# Realizado por: Santiago Charry, Juan D Rozo y Christian Páez
+import cv2
+import numpy as np
+from gpiozero import LED       
+from time import sleep
+
+# Definir los nombres de los pines del puerto GPIO segun la conexion al driver del motor
+A01 = LED(2)
+A02 = LED(3)
+B01 = LED(4)
+B02 = LED(17)
+
+# Crear el objeto captura para capturar video
+cap = cv2.VideoCapture(0)
+
+while True:
+    # Capturar cuadro por cuadro
+    (ret, frame) = cap.read() 
+    
+    # La variable "ret" será verdadera si el frame es leido correctamente
+    if not ret:
+        print("No se pudo acceder a la cámara.")
+        break
+    
+    #imagen en escala de grises
+    gr = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)          
+    
+    #umbralización binaria invertida      
+    (_,bw) = cv2.threshold(gr,110,255,cv2.THRESH_BINARY_INV)  
+    [h,w] = bw.shape                        # obtener alto y ancho de la imagen
+    
+    # sacar una región de interés con todo el ancho y solo una fracción del alto de la imagen
+    roi = bw[int(h*0.8):int(h*0.9),:]
+    
+    cv2.imshow("Video",frame)
+    cv2.imshow("RoI",roi)
+    
+    wmask = int(h/3)                        # dividir el ancho de la imagen en 3
+    
+    # obtener 3 máscaras de la roi divididas en izquierda, centro y derecha
+    mask_left = roi[:,0:wmask]
+    mask_center = roi[:,wmask:wmask*2]
+    mask_right = roi[:,wmask*2:h]
+    
+    # obtener la suma de todos los pixeles en cada máscara
+    sumL = np.sum(mask_left)
+    sumC = np.sum(mask_center)
+    sumR = np.sum(mask_right)
+
+    if sumL > sumC and sumL > sumR:     # girar a la izquierda
+        A01.off()
+        A02.off()
+        B01.on()
+        B02.off()  
+        
+    if sumC > sumL and sumC > sumR:     # adelante   
+        A01.on()
+        A02.off()
+        B01.on()
+        B02.off()
+        
+    if sumR > sumC and sumR > sumC:     # girar a la derecha
+        A01.on()
+        A02.off()
+        B01.off()
+        B02.off() 
+    
+    sleep(0.01)                         # tiempo entre cada iteración
+    
+    # cerrar el programa al pulsar la tecla 's'
+    if (cv2.waitKey(1) == ord('s')):
+        break
+
+cap.release()
+cv2.destroyAllWindows()
